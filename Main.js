@@ -32,27 +32,35 @@ app.use(express.json());
 //     });
 
 
-const { Client } = require('pg');
-const connectionString = 'postgres://postgres:1234@localhost:5432/logindb'
+// const { Client } = require('pg');
+// const connectionString = 'postgres://postgres:1234@localhost:5432/logindb'
 
-const client = new Client ({
+// const client = new Client ({
 
-    connectionString:connectionString
-});
+//     connectionString:connectionString
+// });
 
-client.connect(function(err) {
-    if(err){
-         console.log('DB error');
-         throw err;
-         return false ;
-
+const { Pool } = require('pg');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
 });
+
+// client.connect(function(err) {
+//     if(err){
+//          console.log('DB error');
+//          throw err;
+//          return false ;
+
+//     }
+// });
 
 const sessionStore = new PGStore({
     expiration: (1825*86400*1000),
     endConnectionOnClose: false ,
-}, client );
+}, pool );
 
 // client.query('select * from users' ,(err,res)=>{
 //     console.log(err,res)
@@ -75,12 +83,24 @@ app.use(session({
 
 
 
-new  Router(app , client );
+new  Router(app , pool );
 
 app.get('/' , function(req,res) {
     res.sendFile(path.join(__dirname,'build','index.html'));
 });
 
+app.get('/db', async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query('SELECT * FROM test_table');
+        const results = { 'results': (result) ? result.rows : null };
+        res.send(JSON.stringify(results));
+        client.release();
+    } catch (err) {
+        console.error(err);
+        res.send("Error " + err);
+    }
+})
 
 app.listen(9000);
  

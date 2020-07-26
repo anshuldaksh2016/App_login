@@ -1,14 +1,14 @@
 const bcrypt = require('bcrypt');
 
 class Router {
-    constructor(app,client){
-        this.login(app,client);
-        this.logout(app , client);
-        this.isLoggedIn(app , client);
-        }
-        
-        login(app , client){
-            app.post('/login',(req,res) => {
+    constructor(app,pool){
+        this.login(app,pool);
+        this.logout(app , pool);
+        this.isLoggedIn(app , pool);
+    }
+    
+    login(app , pool){
+        app.post('/login',(req,res) => {
                     let username = req.body.username;
                     let password = req.body.password;
 
@@ -23,7 +23,7 @@ class Router {
                         return;
                     }
                         let cols = [username];
-                        client.query('select * from users where username = ? limit 1' , cols , (err , data , fields) => {
+                        pool.query('select * from users where username = ? limit 1' , cols , (err , data , fields) => {
                             if(err){
                                 res.json({
                                     success: false , 
@@ -60,7 +60,7 @@ class Router {
                     
             });
         }
-        logout(app , client){
+        logout(app , pool){
             app.post('/logout', (req,res) => {
 
                 if (req.session.userID) 
@@ -83,7 +83,7 @@ class Router {
 
         }
 
-        isLoggedIn(app , client){
+        isLoggedIn(app , pool){
              app.post('/isLoggedIn', (req,res) => {
                  if(res.session.userID){
                      let cols = [req.session.userID];
